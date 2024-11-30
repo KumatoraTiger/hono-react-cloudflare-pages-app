@@ -10,12 +10,16 @@
   "dependencies": {
     "@auth/core": "^0.37.4",
     "@hono/auth-js": "^1.0.15",
-    "hono": "^4.6.12"
+    "hono": "^4.6.12",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240529.0",
     "@hono/vite-build": "^1.0.0",
     "@hono/vite-dev-server": "^0.16.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "vite": "^5.2.12",
     "wrangler": "^3.57.2"
   }

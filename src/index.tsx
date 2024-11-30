@@ -1,7 +1,7 @@
 import Google from '@auth/core/providers/google'
 import { authHandler, initAuthConfig, verifyAuth } from '@hono/auth-js'
 import { Hono } from 'hono'
-import { renderer } from './renderer'
+import { renderToString } from 'react-dom/server'
 
 const app = new Hono()
 
@@ -22,14 +22,16 @@ app.use('/api/auth/*', authHandler())
 
 app.use('/admin/*', verifyAuth())
 
-app.use(renderer)
-
 app.get('/', (c) => {
-  return c.render(<h1>Hello!</h1>)
+  return c.html(
+    renderToString(<h1>Hello!</h1>)
+  )
 })
 
 app.get('/admin', (c) => {
-  return c.render(<h1>Hello! Admin</h1>)
+  return c.html(
+    renderToString(<h1>Hello! Admin</h1>)
+  )
 })
 
 export default app
