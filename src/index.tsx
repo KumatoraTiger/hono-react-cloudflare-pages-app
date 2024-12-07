@@ -24,13 +24,45 @@ app.use('/admin/*', verifyAuth())
 
 app.get('/', (c) => {
   return c.html(
-    renderToString(<h1>Hello!</h1>)
+    renderToString(
+      <html lang="ja">
+        <head>
+          <meta charSet="utf-8" />
+          <meta content="width=device-width, initial-scale=1" name="viewport" />
+          <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css" />
+          {import.meta.env.PROD ? (
+            <script type="module" src="/static/root.js" />
+          ) : (
+            <script type="module" src="/src/root.tsx" />
+          )}
+          <body>
+            <div id="root" />
+          </body>
+        </head>
+      </html>
+    )
   )
 })
 
 app.get('/admin', (c) => {
   return c.html(
-    renderToString(<h1>Hello! Admin</h1>)
+    renderToString(
+      <html lang="ja">
+        <head>
+          <meta charSet="utf-8" />
+          <meta content="width=device-width, initial-scale=1" name="viewport" />
+          <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css" />
+          {import.meta.env.PROD ? (
+            <script type="module" src="/static/admin.js" />
+          ) : (
+            <script type="module" src="/src/admin.tsx" />
+          )}
+          <body>
+            <div id="root" />
+          </body>
+        </head>
+      </html>
+    )
   )
 })
 
