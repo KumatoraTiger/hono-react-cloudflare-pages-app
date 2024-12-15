@@ -15,7 +15,7 @@ export function Header() {
 }
 
 function SignInButton() {
-  return <button type="button" onClick={() => signIn('google')}>Sign in with Google</button>
+  return <button type="button" onClick={() => signIn('google', { redirect: true, callbackUrl: "/admin" })}>Sign in with Google</button>
 }
 
 function SignOutButton() {
