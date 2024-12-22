@@ -1,20 +1,30 @@
-import Google from '@auth/core/providers/google'
-import { authHandler, initAuthConfig, verifyAuth } from '@hono/auth-js'
-import { Hono } from 'hono'
-import { renderToString } from 'react-dom/server'
+import Google from '@auth/core/providers/google';
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { authHandler, initAuthConfig, verifyAuth } from '@hono/auth-js';
+import { drizzle } from "drizzle-orm/d1";
+import { Hono } from 'hono';
+import { renderToString } from 'react-dom/server';
 
-const app = new Hono()
+type Bindings = {
+  DB: D1Database;
+};
+
+const app = new Hono<{ Bindings: Bindings }>();
 
 app.use(
   '*',
   initAuthConfig((c) => ({
     secret: c.env.AUTH_SECRET,
+    adapter: DrizzleAdapter(drizzle(c.env.DB)),
     providers: [
       Google({
         clientId: c.env.GOOGLE_ID,
         clientSecret: c.env.GOOGLE_SECRET,
       }),
     ],
+    session: {
+      strategy: 'jwt',
+    },
   }))
 )
 
