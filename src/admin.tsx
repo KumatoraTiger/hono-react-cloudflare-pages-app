@@ -1,10 +1,29 @@
 import { SessionProvider } from '@hono/auth-js/react';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Header } from './components/header';
 
 function App() {
   const [files, setFiles] = useState<FileList | null>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+
+  const fetchImageUrls = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/images');
+      if (!response.ok) {
+        throw new Error('Failed to fetch image URLs');
+      }
+      const urls: string[] = await response.json();
+      setImageUrls(urls);
+    } catch (error) {
+      console.error('Error fetching image URLs:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchImageUrls();
+  }, [fetchImageUrls]);
+
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     setFiles(event.target.files);
@@ -39,7 +58,7 @@ function App() {
           if (uploadResponse.ok) {
             console.log(`File ${file.name} uploaded successfully!`);
 
-            const completeResponse: Response = await fetch('/upload-complete', {
+            const completeResponse: Response = await fetch('/api/admin/upload-complete', {
               method: 'POST',
               body: JSON.stringify({ key: key }),
               headers: {
@@ -49,6 +68,8 @@ function App() {
 
             if (completeResponse.ok) {
               console.log('Upload completion notified.');
+              // アップロード完了後に画像リストを再fetch
+              fetchImageUrls();
             } else {
               console.error('Failed to notify upload completion.');
             }
@@ -68,6 +89,7 @@ function App() {
     }
   };
 
+
   return (
     <SessionProvider>
       <Header />
@@ -76,8 +98,15 @@ function App() {
         <input type="file" multiple accept="image/*" onChange={handleFileChange}  />
         <button type="submit">Upload</button>
       </form>
+
+      <h2>Image Gallery</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+        {imageUrls.map((url, index) => (
+          <img key={url} src={url} alt={`Gallery ${index + 1}`} style={{ maxWidth: '100%', height: 'auto' }} />
+        ))}
+      </div>
     </SessionProvider>
-  )
+  );
 }
 
 const domNode = document.getElementById('root')

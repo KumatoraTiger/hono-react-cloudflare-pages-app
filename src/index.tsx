@@ -2,10 +2,12 @@ import Google from '@auth/core/providers/google';
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { authHandler, initAuthConfig, verifyAuth } from '@hono/auth-js';
+import { authHandler, getAuthUser, initAuthConfig, verifyAuth } from '@hono/auth-js';
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono } from 'hono';
 import { renderToString } from 'react-dom/server';
+import { images, users } from './db/schema';
 
 type Bindings = {
   AUTH_SECRET: string;
@@ -71,20 +73,64 @@ app.get('/api/admin/get-presigned-url', async (c) => {
 });
 
 app.post('/api/admin/upload-complete', async (c) => {
+  const authUser = await getAuthUser(c);
+  const email = authUser?.session?.user?.email;
+
+  if (!email) {
+    c.status(401);
+    return c.json({ message: 'Unauthorized' });
+  }
+
   const { key } = await c.req.json<{ key: string }>();
 
-  return c.json({ key });
+  const db = drizzle(c.env.DB);
+  const user = await db.select().from(users).where(eq(users.email, email)).get();
+
+  if (!user) {
+    c.status(401);
+    return c.json({ message: 'Unauthorized' });
+  }
+
+  await db.insert(images).values({
+    id: key,
+    userId: user.id,
+    createdAt: new Date(),
+  });
+
+  return c.json({ message: 'success' });
 });
 
-app.get('/objects', async (c) => {
-  const objects = await c.env.BUCKET.list();
+app.get('/api/admin/images', async (c) => {
+  const authUser = await getAuthUser(c);
+  const email = authUser?.session?.user?.email;
+
+  if (!email) {
+    c.status(401);
+    return c.json({ message: 'Unauthorized' });
+  }
+
+  const db = drizzle(c.env.DB);
+  const user = await db.select().from(users).where(eq(users.email, email)).get();
+
+  if (!user) {
+    c.status(401);
+    return c.json({ message: 'Unauthorized' });
+  }
+
+  const objects = await db.select().from(images).where(eq(images.userId, user.id)).all();
+
   const client = r2Client(c);
-  const command = new GetObjectCommand({
-    Bucket: c.env.CLOUDFLARE_R2_BUCKET_NAME,
-    Key: objects.objects[0].key,
-  });
-  const signedUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
-  return c.json(signedUrl);
+
+  const signedUrls = []
+  for (const object of objects) {
+    const command = new GetObjectCommand({
+      Bucket: c.env.CLOUDFLARE_R2_BUCKET_NAME,
+      Key: object.id,
+    });
+    const signedUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
+    signedUrls.push(signedUrl);
+  }
+  return c.json(signedUrls);
 })
 
 app.get('/', (c) => {

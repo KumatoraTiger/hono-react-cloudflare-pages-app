@@ -38,3 +38,17 @@ export const accounts = sqliteTable(
     }),
   ]
 )
+
+export const images = sqliteTable(
+  "image",
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: integer({ mode: "timestamp_ms" }),
+  },
+  () => []
+)
