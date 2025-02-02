@@ -36,6 +36,11 @@ function App() {
       return;
     }
 
+    if (imageUrls.length + files.length >= 50) {
+      console.error('You can only upload up to 50 images.');
+      return;
+    }
+
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
         try {

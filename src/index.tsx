@@ -59,6 +59,31 @@ app.use('/api/admin/*', verifyAuth())
 
 // 署名付き URL 生成エンドポイント
 app.get('/api/admin/get-presigned-url', async (c) => {
+  const db = drizzle(c.env.DB);
+  const authUser = await getAuthUser(c);
+  const email = authUser?.session?.user?.email;
+
+  if (!email) {
+    c.status(401);
+    return c.json({ message: 'Unauthorized' });
+  }
+
+  const user = await db.select().from(users).where(eq(users.email, email)).get();
+
+  if (!user) {
+    c.status(401);
+    return c.json({ message: 'Unauthorized' });
+  }
+
+  // ユーザーがアップロードした画像の数を取得
+  const imageCount = await db.select().from(images).where(eq(images.userId, user.id)).all();
+
+  // 画像数が50枚を超えている場合はエラーを返す
+  if (imageCount.length >= 50) {
+    c.status(400);
+    return c.json({ message: 'You can only upload up to 50 images.' });
+  }
+
   const client = r2Client(c);
   const key = crypto.randomUUID();
   const command = new PutObjectCommand({
